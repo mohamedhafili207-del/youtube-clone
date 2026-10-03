@@ -25,6 +25,8 @@ let currentVideo = null;
 let pinBuffer = "";
 let parentMode = false;
 let tick = null;
+let cueCache = {};
+let activeCues = [];
 
 const $ = (id) => document.getElementById(id);
 
@@ -89,6 +91,39 @@ function showScreen(name) {
   if (name === "favs") renderFavs();
 }
 
+function parseTimestamp(ts) {
+  const [hms, ms = "0"] = ts.trim().split(".");
+  const parts = hms.split(":").map(Number);
+  const [h, m, s] = parts.length === 3 ? parts : [0, parts[0] || 0, parts[1] || 0];
+  return h * 3600 + m * 60 + s + Number(String(ms).padEnd(3, "0").slice(0, 3)) / 1000;
+}
+
+function parseVtt(text) {
+  return text
+    .replace(/^\uFEFF/, "")
+    .split(/\n\s*\n/)
+    .map((block) => {
+      const lines = block.split(/\n/).map((l) => l.trim()).filter(Boolean);
+      const timeLine = lines.find((l) => l.includes("-->"));
+      if (!timeLine) return null;
+      const [startRaw, endRaw] = timeLine.split("-->");
+      const start = parseTimestamp(startRaw);
+      const end = parseTimestamp(endRaw.trim().split(/\s+/)[0]);
+      const cueText = lines.slice(lines.indexOf(timeLine) + 1).join("\n");
+      return cueText ? { start, end, text: cueText } : null;
+    })
+    .filter(Boolean);
+}
+
+async function loadCues(src) {
+  if (cueCache[src]) return cueCache[src];
+  const res = await fetch(src);
+  if (!res.ok) throw new Error("caption fetch failed");
+  const cues = parseVtt(await res.text());
+  cueCache[src] = cues;
+  return cues;
+}
+
 function playVideo(id) {
   if (state.locked) {
     openOverlay("time");
@@ -99,18 +134,8 @@ function playVideo(id) {
   currentVideo = v;
   const video = $("player");
   video.pause();
-  video.querySelectorAll("track").forEach((t) => t.remove());
   video.src = v.src;
   video.poster = v.poster || "";
-  (v.captions || []).forEach((cap) => {
-    const track = document.createElement("track");
-    track.kind = "captions";
-    track.srclang = cap.lang;
-    track.label = cap.label;
-    track.src = cap.src;
-    track.addEventListener("load", applyCaptionMode);
-    video.appendChild(track);
-  });
   $("watch-title").textContent = v.title;
   $("watch-desc").textContent = v.desc;
   $("watch-credit").textContent = v.credit ? `CC: ${v.credit}` : "";
@@ -119,18 +144,49 @@ function playVideo(id) {
   $("fav-btn").textContent = favOn ? "❤️ في المفضلة" : "♡ أضف للمفضلة";
   showScreen("watch");
   applyCaptionMode();
-  updateCcUi();
   video.play().catch(() => {});
 }
 
-function applyCaptionMode() {
-  const video = $("player");
+let captionRequest = 0;
+
+async function applyCaptionMode() {
+  const req = ++captionRequest;
+  activeCues = [];
+  renderCue(0);
   const on = Boolean(state.captionsOn);
   const lang = state.captionLang || "ar";
-  for (const tt of video.textTracks) {
-    tt.mode = on && tt.language === lang ? "showing" : "disabled";
+  const cap = currentVideo && (currentVideo.captions || []).find((c) => c.lang === lang);
+  let cues = [];
+  if (on && cap) {
+    try {
+      cues = await loadCues(cap.src);
+    } catch {
+      cues = [];
+    }
   }
+  if (req !== captionRequest) return;
+  activeCues = cues;
+  renderCue($("player").currentTime || 0);
   updateCcUi();
+}
+
+function renderCue(time) {
+  const box = $("cc-text");
+  if (!state.captionsOn || !activeCues.length) {
+    box.hidden = true;
+    box.innerHTML = "";
+    return;
+  }
+  const cue = activeCues.find((c) => time >= c.start && time < c.end);
+  if (!cue) {
+    box.hidden = true;
+    box.innerHTML = "";
+    return;
+  }
+  box.hidden = false;
+  box.lang = state.captionLang === "fr" ? "fr" : "ar";
+  box.dir = state.captionLang === "fr" ? "ltr" : "rtl";
+  box.innerHTML = `<span>${cue.text.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]))}</span>`;
 }
 
 function updateCcUi() {
@@ -297,8 +353,9 @@ $("cc-overlay-btn").addEventListener("click", (e) => {
   e.stopPropagation();
   toggleCcMenu();
 });
+$("player").addEventListener("timeupdate", () => renderCue($("player").currentTime));
+$("player").addEventListener("seeked", () => renderCue($("player").currentTime));
 $("player").addEventListener("loadeddata", applyCaptionMode);
-$("player").addEventListener("play", applyCaptionMode);
 
 renderCategories();
 renderHome();

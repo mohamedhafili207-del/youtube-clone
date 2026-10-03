@@ -221,6 +221,38 @@ input {
   border-radius: 28px;
   overflow: hidden;
   box-shadow: var(--shadow);
+  position: relative;
+}
+
+.cc-text {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 72px;
+  text-align: center;
+  color: #fff;
+  font-size: clamp(1.15rem, 2.4vw, 1.7rem);
+  font-weight: 800;
+  line-height: 1.45;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+  z-index: 3;
+  direction: rtl;
+}
+
+.cc-text[lang="fr"] {
+  direction: ltr;
+}
+
+.cc-text:not([hidden]) {
+  display: block;
+}
+
+.cc-text span {
+  display: inline-block;
+  background: rgba(15, 23, 42, 0.78);
+  border-radius: 14px;
+  padding: 8px 14px;
 }
 
 video {
