@@ -7,6 +7,8 @@ const defaultState = () => ({
   watchedSeconds: 0,
   favorites: [],
   locked: false,
+  captionsOn: true,
+  captionLang: "ar",
 });
 
 function loadState() {
@@ -23,6 +25,8 @@ let currentVideo = null;
 let pinBuffer = "";
 let parentMode = false;
 let tick = null;
+let cueCache = {};
+let activeCues = [];
 
 const $ = (id) => document.getElementById(id);
 
@@ -87,6 +91,39 @@ function showScreen(name) {
   if (name === "favs") renderFavs();
 }
 
+function parseTimestamp(ts) {
+  const [hms, ms = "0"] = ts.trim().split(".");
+  const parts = hms.split(":").map(Number);
+  const [h, m, s] = parts.length === 3 ? parts : [0, parts[0] || 0, parts[1] || 0];
+  return h * 3600 + m * 60 + s + Number(String(ms).padEnd(3, "0").slice(0, 3)) / 1000;
+}
+
+function parseVtt(text) {
+  return text
+    .replace(/^\uFEFF/, "")
+    .split(/\n\s*\n/)
+    .map((block) => {
+      const lines = block.split(/\n/).map((l) => l.trim()).filter(Boolean);
+      const timeLine = lines.find((l) => l.includes("-->"));
+      if (!timeLine) return null;
+      const [startRaw, endRaw] = timeLine.split("-->");
+      const start = parseTimestamp(startRaw);
+      const end = parseTimestamp(endRaw.trim().split(/\s+/)[0]);
+      const cueText = lines.slice(lines.indexOf(timeLine) + 1).join("\n");
+      return cueText ? { start, end, text: cueText } : null;
+    })
+    .filter(Boolean);
+}
+
+async function loadCues(src) {
+  if (cueCache[src]) return cueCache[src];
+  const res = await fetch(src);
+  if (!res.ok) throw new Error("caption fetch failed");
+  const cues = parseVtt(await res.text());
+  cueCache[src] = cues;
+  return cues;
+}
+
 function playVideo(id) {
   if (state.locked) {
     openOverlay("time");
@@ -95,15 +132,99 @@ function playVideo(id) {
   const v = VIDEOS.find((x) => x.id === id);
   if (!v) return;
   currentVideo = v;
-  $("player").src = v.src;
-  $("player").poster = v.poster || "";
+  const video = $("player");
+  video.pause();
+  video.src = v.src;
+  video.poster = v.poster || "";
   $("watch-title").textContent = v.title;
   $("watch-desc").textContent = v.desc;
+  $("watch-credit").textContent = v.credit ? `CC: ${v.credit}` : "";
   const favOn = state.favorites.includes(v.id);
   $("fav-btn").classList.toggle("on", favOn);
   $("fav-btn").textContent = favOn ? "❤️ في المفضلة" : "♡ أضف للمفضلة";
   showScreen("watch");
-  $("player").play().catch(() => {});
+  applyCaptionMode();
+  video.play().catch(() => {});
+}
+
+let captionRequest = 0;
+
+async function applyCaptionMode() {
+  const req = ++captionRequest;
+  activeCues = [];
+  renderCue(0);
+  const on = Boolean(state.captionsOn);
+  const lang = state.captionLang || "ar";
+  const cap = currentVideo && (currentVideo.captions || []).find((c) => c.lang === lang);
+  let cues = [];
+  if (on && cap) {
+    try {
+      cues = await loadCues(cap.src);
+    } catch {
+      cues = [];
+    }
+  }
+  if (req !== captionRequest) return;
+  activeCues = cues;
+  renderCue($("player").currentTime || 0);
+  updateCcUi();
+}
+
+function renderCue(time) {
+  const box = $("cc-text");
+  if (!state.captionsOn || !activeCues.length) {
+    box.hidden = true;
+    box.innerHTML = "";
+    return;
+  }
+  const cue = activeCues.find((c) => time >= c.start && time < c.end);
+  if (!cue) {
+    box.hidden = true;
+    box.innerHTML = "";
+    return;
+  }
+  box.hidden = false;
+  box.lang = state.captionLang === "fr" ? "fr" : "ar";
+  box.dir = state.captionLang === "fr" ? "ltr" : "rtl";
+  box.innerHTML = `<span>${cue.text.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]))}</span>`;
+}
+
+function updateCcUi() {
+  const on = Boolean(state.captionsOn);
+  const lang = state.captionLang || "ar";
+  const label = on ? (lang === "fr" ? "CC FR" : "CC العربية") : "CC الترجمة";
+  $("cc-btn").textContent = label;
+  $("cc-btn").classList.toggle("on", on);
+  $("cc-btn").setAttribute("aria-expanded", String(!$("cc-menu").hidden));
+  $("cc-overlay-btn").classList.toggle("on", on);
+  $("cc-menu").querySelectorAll("[data-cc]").forEach((btn) => {
+    const value = btn.dataset.cc;
+    const active = on ? value === lang : value === "";
+    btn.classList.toggle("active", active);
+  });
+}
+
+function setCaptions(langOrOff) {
+  if (!langOrOff) {
+    state.captionsOn = false;
+  } else {
+    state.captionsOn = true;
+    state.captionLang = langOrOff;
+  }
+  save();
+  applyCaptionMode();
+  closeCcMenu();
+}
+
+function toggleCcMenu() {
+  const menu = $("cc-menu");
+  menu.hidden = !menu.hidden;
+  updateCcUi();
+}
+
+function closeCcMenu() {
+  $("cc-menu").hidden = true;
+  $("cc-btn").setAttribute("aria-expanded", "false");
 }
 
 function toggleFav() {
@@ -168,6 +289,8 @@ function handlePin(n) {
       save();
       $("minutes").value = state.minutesLimit;
       $("newpin").value = state.pin;
+      $("captions-on").checked = Boolean(state.captionsOn);
+      $("caption-lang").value = state.captionLang || "ar";
       openOverlay("parent");
     } else {
       $("pin-msg").textContent = "الرقم غلط، عاود";
@@ -184,9 +307,13 @@ function saveParent() {
   const pin = $("newpin").value.trim();
   if (minutes >= 5 && minutes <= 180) state.minutesLimit = minutes;
   if (/^\d{4}$/.test(pin)) state.pin = pin;
+  state.captionsOn = $("captions-on").checked;
+  const lang = $("caption-lang").value;
+  if (lang === "ar" || lang === "fr") state.captionLang = lang;
   state.watchedSeconds = 0;
   state.locked = false;
   save();
+  applyCaptionMode();
   closeOverlay();
 }
 
@@ -205,6 +332,9 @@ document.addEventListener("click", (e) => {
   if (pinBtn) handlePin(pinBtn.dataset.pin);
   const ageBtn = e.target.closest("[data-age]");
   if (ageBtn) setAge(ageBtn.dataset.age);
+  const ccChoice = e.target.closest("[data-cc]");
+  if (ccChoice) setCaptions(ccChoice.dataset.cc);
+  if (!e.target.closest(".cc-wrap") && !e.target.closest("#cc-overlay-btn")) closeCcMenu();
 });
 
 $("search").addEventListener("input", renderHome);
@@ -215,6 +345,17 @@ $("save-parent").addEventListener("click", saveParent);
 $("close-parent").addEventListener("click", closeOverlay);
 $("reset-time").addEventListener("click", () => openOverlay("pin"));
 $("unlock-time").addEventListener("click", () => openOverlay("pin"));
+$("cc-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleCcMenu();
+});
+$("cc-overlay-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleCcMenu();
+});
+$("player").addEventListener("timeupdate", () => renderCue($("player").currentTime));
+$("player").addEventListener("seeked", () => renderCue($("player").currentTime));
+$("player").addEventListener("loadeddata", applyCaptionMode);
 
 renderCategories();
 renderHome();
