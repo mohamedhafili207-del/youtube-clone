@@ -44,15 +44,27 @@
       </section>
 
       <section id="screen-watch" class="screen">
-        <div class="row" style="margin-bottom: 12px">
+        <div class="row watch-toolbar">
           <button class="btn btn-back" id="back-btn">→ رجوع</button>
+          <div class="cc-wrap">
+            <button type="button" class="btn btn-cc" id="cc-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="cc-menu">
+              CC الترجمة
+            </button>
+            <div class="cc-menu" id="cc-menu" role="menu" hidden>
+              <button type="button" role="menuitem" data-cc="">إيقاف</button>
+              <button type="button" role="menuitem" data-cc="ar">العربية</button>
+              <button type="button" role="menuitem" data-cc="fr">Français</button>
+            </div>
+          </div>
         </div>
         <div class="player-wrap">
           <video id="player" controls playsinline></video>
+          <button type="button" class="cc-overlay-btn" id="cc-overlay-btn" aria-label="الترجمة">CC</button>
         </div>
         <div class="watch-meta">
           <h2 id="watch-title"></h2>
           <p id="watch-desc"></p>
+          <p class="cc-credit" id="watch-credit"></p>
           <div class="row" style="margin-top: 12px">
             <button class="btn btn-fav" id="fav-btn">♡ أضف للمفضلة</button>
           </div>
@@ -95,6 +107,15 @@
         <h2>إعدادات الأهل</h2>
         <label>حد الوقت (دقائق)</label>
         <input class="field" id="minutes" type="number" min="5" max="180" />
+        <label class="check-row">
+          <input id="captions-on" type="checkbox" />
+          تشغيل الترجمة (CC)
+        </label>
+        <label>لغة الترجمة</label>
+        <select class="field" id="caption-lang">
+          <option value="ar">العربية</option>
+          <option value="fr">Français</option>
+        </select>
         <label>رمز جديد (4 أرقام)</label>
         <input class="field" id="newpin" type="password" maxlength="4" inputmode="numeric" />
         <div class="parent-btns">

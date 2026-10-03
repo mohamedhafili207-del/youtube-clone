@@ -7,6 +7,8 @@ const defaultState = () => ({
   watchedSeconds: 0,
   favorites: [],
   locked: false,
+  captionsOn: true,
+  captionLang: "ar",
 });
 
 function loadState() {
@@ -95,15 +97,78 @@ function playVideo(id) {
   const v = VIDEOS.find((x) => x.id === id);
   if (!v) return;
   currentVideo = v;
-  $("player").src = v.src;
-  $("player").poster = v.poster || "";
+  const video = $("player");
+  video.pause();
+  video.querySelectorAll("track").forEach((t) => t.remove());
+  video.src = v.src;
+  video.poster = v.poster || "";
+  (v.captions || []).forEach((cap) => {
+    const track = document.createElement("track");
+    track.kind = "captions";
+    track.srclang = cap.lang;
+    track.label = cap.label;
+    track.src = cap.src;
+    track.addEventListener("load", applyCaptionMode);
+    video.appendChild(track);
+  });
   $("watch-title").textContent = v.title;
   $("watch-desc").textContent = v.desc;
+  $("watch-credit").textContent = v.credit ? `CC: ${v.credit}` : "";
   const favOn = state.favorites.includes(v.id);
   $("fav-btn").classList.toggle("on", favOn);
   $("fav-btn").textContent = favOn ? "❤️ في المفضلة" : "♡ أضف للمفضلة";
   showScreen("watch");
-  $("player").play().catch(() => {});
+  applyCaptionMode();
+  updateCcUi();
+  video.play().catch(() => {});
+}
+
+function applyCaptionMode() {
+  const video = $("player");
+  const on = Boolean(state.captionsOn);
+  const lang = state.captionLang || "ar";
+  for (const tt of video.textTracks) {
+    tt.mode = on && tt.language === lang ? "showing" : "disabled";
+  }
+  updateCcUi();
+}
+
+function updateCcUi() {
+  const on = Boolean(state.captionsOn);
+  const lang = state.captionLang || "ar";
+  const label = on ? (lang === "fr" ? "CC FR" : "CC العربية") : "CC الترجمة";
+  $("cc-btn").textContent = label;
+  $("cc-btn").classList.toggle("on", on);
+  $("cc-btn").setAttribute("aria-expanded", String(!$("cc-menu").hidden));
+  $("cc-overlay-btn").classList.toggle("on", on);
+  $("cc-menu").querySelectorAll("[data-cc]").forEach((btn) => {
+    const value = btn.dataset.cc;
+    const active = on ? value === lang : value === "";
+    btn.classList.toggle("active", active);
+  });
+}
+
+function setCaptions(langOrOff) {
+  if (!langOrOff) {
+    state.captionsOn = false;
+  } else {
+    state.captionsOn = true;
+    state.captionLang = langOrOff;
+  }
+  save();
+  applyCaptionMode();
+  closeCcMenu();
+}
+
+function toggleCcMenu() {
+  const menu = $("cc-menu");
+  menu.hidden = !menu.hidden;
+  updateCcUi();
+}
+
+function closeCcMenu() {
+  $("cc-menu").hidden = true;
+  $("cc-btn").setAttribute("aria-expanded", "false");
 }
 
 function toggleFav() {
@@ -168,6 +233,8 @@ function handlePin(n) {
       save();
       $("minutes").value = state.minutesLimit;
       $("newpin").value = state.pin;
+      $("captions-on").checked = Boolean(state.captionsOn);
+      $("caption-lang").value = state.captionLang || "ar";
       openOverlay("parent");
     } else {
       $("pin-msg").textContent = "الرقم غلط، عاود";
@@ -184,9 +251,13 @@ function saveParent() {
   const pin = $("newpin").value.trim();
   if (minutes >= 5 && minutes <= 180) state.minutesLimit = minutes;
   if (/^\d{4}$/.test(pin)) state.pin = pin;
+  state.captionsOn = $("captions-on").checked;
+  const lang = $("caption-lang").value;
+  if (lang === "ar" || lang === "fr") state.captionLang = lang;
   state.watchedSeconds = 0;
   state.locked = false;
   save();
+  applyCaptionMode();
   closeOverlay();
 }
 
@@ -205,6 +276,9 @@ document.addEventListener("click", (e) => {
   if (pinBtn) handlePin(pinBtn.dataset.pin);
   const ageBtn = e.target.closest("[data-age]");
   if (ageBtn) setAge(ageBtn.dataset.age);
+  const ccChoice = e.target.closest("[data-cc]");
+  if (ccChoice) setCaptions(ccChoice.dataset.cc);
+  if (!e.target.closest(".cc-wrap") && !e.target.closest("#cc-overlay-btn")) closeCcMenu();
 });
 
 $("search").addEventListener("input", renderHome);
@@ -215,6 +289,16 @@ $("save-parent").addEventListener("click", saveParent);
 $("close-parent").addEventListener("click", closeOverlay);
 $("reset-time").addEventListener("click", () => openOverlay("pin"));
 $("unlock-time").addEventListener("click", () => openOverlay("pin"));
+$("cc-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleCcMenu();
+});
+$("cc-overlay-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleCcMenu();
+});
+$("player").addEventListener("loadeddata", applyCaptionMode);
+$("player").addEventListener("play", applyCaptionMode);
 
 renderCategories();
 renderHome();

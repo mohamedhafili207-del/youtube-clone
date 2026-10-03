@@ -250,6 +250,105 @@ video {
   align-items: center;
 }
 
+.watch-toolbar {
+  margin-bottom: 12px;
+  justify-content: space-between;
+}
+
+.cc-wrap {
+  position: relative;
+}
+
+.btn-cc,
+.cc-overlay-btn {
+  background: #1f2937;
+  color: white;
+  letter-spacing: 0.04em;
+}
+
+.btn-cc.on,
+.cc-overlay-btn.on {
+  background: #f59e0b;
+  color: #1f2937;
+}
+
+.cc-overlay-btn {
+  position: absolute;
+  left: 14px;
+  bottom: 58px;
+  border: 0;
+  border-radius: 12px;
+  min-width: 48px;
+  padding: 8px 12px;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.92;
+}
+
+.cc-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 180px;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.16);
+  padding: 8px;
+  z-index: 25;
+  display: grid;
+  gap: 6px;
+}
+
+.cc-menu[hidden] {
+  display: none;
+}
+
+.cc-menu button {
+  border: 0;
+  background: #fff7ed;
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  text-align: right;
+}
+
+.cc-menu button.active {
+  background: #1f2937;
+  color: white;
+}
+
+.cc-credit {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 8px 0 14px;
+  font-weight: 800;
+}
+
+.check-row input {
+  width: 22px;
+  height: 22px;
+}
+
+video::cue {
+  font-family: "Tajawal", "Segoe UI", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.72);
+}
+
 .btn {
   border: 0;
   border-radius: 999px;

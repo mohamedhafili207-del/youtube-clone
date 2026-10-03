@@ -1,3 +1,5 @@
+const SAMPLE_CREDIT = "Big Buck Bunny — Blender Foundation (CC BY 3.0)";
+
 const VIDEOS = [
   {
     id: "bunny-adventure",
@@ -11,6 +13,11 @@ const VIDEOS = [
     src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
     desc: "كرتون مرح وآمن — فيديو تجريبي للعرض.",
+    credit: SAMPLE_CREDIT,
+    captions: [
+      { lang: "ar", label: "العربية", src: "captions/bunny-adventure-ar.vtt" },
+      { lang: "fr", label: "Français", src: "captions/bunny-adventure-fr.vtt" },
+    ],
   },
   {
     id: "letters-fun",
@@ -24,6 +31,11 @@ const VIDEOS = [
     src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
     desc: "حروف وأصوات بطريقة سهلة للصغار.",
+    credit: SAMPLE_CREDIT,
+    captions: [
+      { lang: "ar", label: "العربية", src: "captions/letters-fun-ar.vtt" },
+      { lang: "fr", label: "Français", src: "captions/letters-fun-fr.vtt" },
+    ],
   },
   {
     id: "numbers-1-10",
@@ -37,6 +49,11 @@ const VIDEOS = [
     src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
     desc: "عدّ مع الأصدقاء — محتوى تعليمي تجريبي.",
+    credit: SAMPLE_CREDIT,
+    captions: [
+      { lang: "ar", label: "العربية", src: "captions/numbers-1-10-ar.vtt" },
+      { lang: "fr", label: "Français", src: "captions/numbers-1-10-fr.vtt" },
+    ],
   },
   {
     id: "animal-friends",
@@ -50,6 +67,11 @@ const VIDEOS = [
     src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
     desc: "حيوانات لطيفة وأصواتها.",
+    credit: SAMPLE_CREDIT,
+    captions: [
+      { lang: "ar", label: "العربية", src: "captions/animal-friends-ar.vtt" },
+      { lang: "fr", label: "Français", src: "captions/animal-friends-fr.vtt" },
+    ],
   },
   {
     id: "bedtime-story",
@@ -63,6 +85,11 @@ const VIDEOS = [
     src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
     desc: "حكاية هادئة قبل النوم.",
+    credit: SAMPLE_CREDIT,
+    captions: [
+      { lang: "ar", label: "العربية", src: "captions/bedtime-story-ar.vtt" },
+      { lang: "fr", label: "Français", src: "captions/bedtime-story-fr.vtt" },
+    ],
   },
   {
     id: "science-sky",
@@ -76,6 +103,11 @@ const VIDEOS = [
     src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
     desc: "علوم مبسطة بدون خوف.",
+    credit: SAMPLE_CREDIT,
+    captions: [
+      { lang: "ar", label: "العربية", src: "captions/science-sky-ar.vtt" },
+      { lang: "fr", label: "Français", src: "captions/science-sky-fr.vtt" },
+    ],
   },
   {
     id: "happy-song",
@@ -89,6 +121,11 @@ const VIDEOS = [
     src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
     desc: "أغنية قصيرة ومبهجة للبداية.",
+    credit: SAMPLE_CREDIT,
+    captions: [
+      { lang: "ar", label: "العربية", src: "captions/happy-song-ar.vtt" },
+      { lang: "fr", label: "Français", src: "captions/happy-song-fr.vtt" },
+    ],
   },
   {
     id: "space-kids",
@@ -102,6 +139,11 @@ const VIDEOS = [
     src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
     desc: "فضاء مبسّط للصغار الفضوليين.",
+    credit: SAMPLE_CREDIT,
+    captions: [
+      { lang: "ar", label: "العربية", src: "captions/space-kids-ar.vtt" },
+      { lang: "fr", label: "Français", src: "captions/space-kids-fr.vtt" },
+    ],
   },
   {
     id: "kind-friends",
@@ -115,6 +157,11 @@ const VIDEOS = [
     src: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
     desc: "قصة عن المشاركة والاحترام.",
+    credit: SAMPLE_CREDIT,
+    captions: [
+      { lang: "ar", label: "العربية", src: "captions/kind-friends-ar.vtt" },
+      { lang: "fr", label: "Français", src: "captions/kind-friends-fr.vtt" },
+    ],
   },
 ];
 
